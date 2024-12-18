@@ -2,50 +2,58 @@ import os
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 import matplotlib.pyplot as plt
 
-dataset_path = r"C:\Users\ttoan\.cache\kagglehub\datasets\prasunroy\natural-images\versions\1"
+dataset_path = "natural-images/natural_images"
 
-# Set image size
 img_size = (128, 128)
 
-train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
-val_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+# Single ImageDataGenerator with validation split
+datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
 
-# Load training and validation data
-train_data = train_datagen.flow_from_directory(
+# Load training data
+train_data = datagen.flow_from_directory(
     directory=dataset_path,
     target_size=img_size,
     batch_size=32,
     class_mode='categorical',
-    subset='training'
+    subset='training',
+    shuffle=True,
+    seed=42 
 )
 
-val_data = val_datagen.flow_from_directory(
+# Load validation data
+val_data = datagen.flow_from_directory(
     directory=dataset_path,
     target_size=img_size,
     batch_size=32,
     class_mode='categorical',
-    subset='validation'
+    subset='validation',
+    shuffle=False,
+    seed=42 
 )
+
 
 # simple CNN model 
 model = Sequential([
     Conv2D(32, (3, 3), activation='relu', input_shape=(img_size[0], img_size[1], 3)),
     MaxPooling2D((2, 2)),
+
     Conv2D(64, (3, 3), activation='relu'),
     MaxPooling2D((2, 2)),
+
     Conv2D(128, (3, 3), activation='relu'),
     MaxPooling2D((2, 2)),
+
     Flatten(),
     Dense(128, activation='relu'),
+    Dropout(0.5),  
     Dense(train_data.num_classes, activation='softmax')
 ])
 
 # compile
-model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile('adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # train
 history = model.fit(
